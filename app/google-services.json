@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "630675804939",
+    "project_id": "searchformycar-e8120",
+    "storage_bucket": "searchformycar-e8120.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:630675804939:android:3fddd6ea5b3bd2ad9c880e",
+        "android_client_info": {
+          "package_name": "com.muhanad.searchformycar"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBXWimOqb5NSlOO4gGaGcAjfO2n4HRK2Qg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
