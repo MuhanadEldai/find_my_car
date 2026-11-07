@@ -65,31 +65,39 @@ fun SettingsScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        if (isAr) "الإعدادات" else "Settings",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 22.sp,
-                        color = Color.White,
-                        textAlign = if (isAr) TextAlign.Right else TextAlign.Left,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp)
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = if (isAr) "رجوع" else "Back",
-                            tint = Color.White // Back icon set to white
+            Surface(
+                shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp),
+                color = MaterialTheme.colorScheme.scrim,
+                shadowElevation = 8.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                TopAppBar(
+                    title = {
+                        Text(
+                            if (isAr) "الإعدادات" else "Settings",
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 22.sp,
+                            color = Color.White,
+                            textAlign = if (isAr) TextAlign.Right else TextAlign.Left,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp)
                         )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.scrim)
-            )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = if (isAr) "رجوع" else "Back",
+                                tint = Color.White
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                )
+            }
         }
     ) { innerPadding ->
         Column(
@@ -111,7 +119,7 @@ fun SettingsScreen(
                     horizontalAlignment = if (isAr) Alignment.End else Alignment.Start
                 ) {
                     Text(
-                        if (isAr) "لغة التطبيق (App Language)" else "App Language (لغة التطبيق)",
+                        if (isAr) "لغة التطبيق" else "App Language)",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
@@ -126,7 +134,7 @@ fun SettingsScreen(
                                 selected = language == "ar",
                                 onClick = { onLanguageChanged("ar") }
                             )
-                            Text("العربية (الافتراضية)")
+                            Text("العربية")
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             RadioButton(
@@ -159,7 +167,7 @@ fun SettingsScreen(
                     )
                     Column(horizontalAlignment = if (isAr) Alignment.End else Alignment.Start) {
                         Text(
-                            if (isAr) "الوضع الليلي (Dark Mode)" else "Dark Mode",
+                            if (isAr) "الوضع الليلي" else "Dark Mode",
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         )
