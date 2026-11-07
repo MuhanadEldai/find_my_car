@@ -50,8 +50,7 @@ data class InstructionSlide(
     val titleAr: String,
     val titleEn: String,
     val descriptionAr: String,
-    val descriptionEn: String,
-    val icon: String
+    val descriptionEn: String
 )
 
 @Composable
@@ -77,25 +76,26 @@ fun HomeScreen(
     val instructionSlides = remember {
         listOf(
             InstructionSlide(
-                titleAr = "ابحث برقم الشاسي",
-                titleEn = "Search by Chassis",
-                descriptionAr = "أدخل رقم الشاسي فوراً للتحقق من حالة السيارة وتفاصيلها في قاعدة البيانات",
-                descriptionEn = "Enter chassis number to instantly check car status in database",
-                icon = "🔎"
+                titleAr = "",
+                titleEn = "",
+                descriptionAr = " ",
+                descriptionEn = ""
+
             ),
+
             InstructionSlide(
-                titleAr = "أضف بلاغ سيارة مفقودة",
+                titleAr = "",
                 titleEn = "File a Missing Car Report",
-                descriptionAr = "في حال عدم العثور عليها، قدم بلاغاً جديداً ليصل إلى فريق البحث فوراً",
-                descriptionEn = "If not found, submit a report to alert search team instantly",
-                icon = "📝"
+                descriptionAr = "اكثر من 10000 بلاغ عن سيارة مفقودة ",
+                descriptionEn = "If not found, submit a report to alert search team instantly"
+                
             ),
             InstructionSlide(
-                titleAr = "تواصل مباشر عبر واتساب",
+                titleAr = "",
                 titleEn = "Direct WhatsApp Support",
-                descriptionAr = "تواصل بسهولة وأمان مع مالك السيارة أو فريق الدعم بنقرة واحدة",
-                descriptionEn = "Connect easily with car owner or support team in one click",
-                icon = "💬"
+                descriptionAr = "اكثر من 5000 سيارة تم العثور عليها",
+                descriptionEn = "Connect easily with car owner or support team in one click"
+                
             )
         )
     }
@@ -157,6 +157,12 @@ fun HomeScreen(
                     .height(190.dp)
             ) { page ->
                 val slide = instructionSlides[page]
+                val imageRes = when (page) {
+                    0 -> R.drawable.image
+                    1 -> R.drawable.header2
+                    2 -> R.drawable.header3
+                    else -> R.drawable.image
+                }
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
@@ -164,8 +170,8 @@ fun HomeScreen(
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         Image(
-                            painter = painterResource(id = R.drawable.image),
-                            contentDescription = "Header Instruction Slide",
+                            painter = painterResource(id = imageRes),
+                            contentDescription = "Header Instruction Slide $page",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
                         )
@@ -176,45 +182,31 @@ fun HomeScreen(
                                     Brush.verticalGradient(
                                         colors = listOf(
                                             Color.Black.copy(alpha = 0.25f),
-                                            Color.Black.copy(alpha = 0.80f)
+                                            Color.Black.copy(alpha = 0.65f)
                                         )
                                     )
                                 )
                         )
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(18.dp),
-                            verticalArrangement = Arrangement.Bottom,
-                            horizontalAlignment = if (isAr) Alignment.End else Alignment.Start
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = if (isAr) Arrangement.End else Arrangement.Start
-                            ) {
-                                if (!isAr) {
-                                    Text(slide.icon, fontSize = 22.sp)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                }
-                                Text(
-                                    text = if (isAr) slide.titleAr else slide.titleEn,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 19.sp,
-                                    color = Color.White
-                                )
-                                if (isAr) {
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(slide.icon, fontSize = 22.sp)
+                        if (page == 0) {
+                            val descText = if (isAr) slide.descriptionAr else slide.descriptionEn
+                            if (descText.isNotBlank()) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(18.dp),
+                                    verticalArrangement = Arrangement.Bottom,
+                                    horizontalAlignment = if (isAr) Alignment.CenterHorizontally else Alignment.Start
+                                ) {
+                                    Text(
+                                        text = descText,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        textAlign = if (isAr) TextAlign.Center else TextAlign.Left,
+                                        lineHeight = 22.sp
+                                    )
                                 }
                             }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = if (isAr) slide.descriptionAr else slide.descriptionEn,
-                                fontSize = 13.sp,
-                                color = Color.White.copy(alpha = 0.95f),
-                                textAlign = if (isAr) TextAlign.Right else TextAlign.Left,
-                                lineHeight = 18.sp
-                            )
                         }
                     }
                 }
@@ -394,35 +386,35 @@ fun HomeScreen(
                             StructuredDetailRow(
                                 label = AppStrings.get("chassis_number", language),
                                 value = car.chassisNumber,
-                                icon = "🔢",
+                                icon = "",
                                 isAr = isAr
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             StructuredDetailRow(
                                 label = AppStrings.get("license_plate", language),
                                 value = car.licensePlate.ifEmpty { AppStrings.get("not_specified", language) },
-                                icon = "🏷️",
+                                icon = "",
                                 isAr = isAr
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             StructuredDetailRow(
                                 label = AppStrings.get("color", language),
                                 value = car.color.ifEmpty { AppStrings.get("not_specified", language) },
-                                icon = "🎨",
+                                icon = "",
                                 isAr = isAr
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             StructuredDetailRow(
                                 label = AppStrings.get("phone", language),
                                 value = car.phone.ifEmpty { AppStrings.get("not_available", language) },
-                                icon = "📞",
+                                icon = "",
                                 isAr = isAr
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             StructuredDetailRow(
                                 label = AppStrings.get("details", language),
                                 value = car.description.ifEmpty { AppStrings.get("no_details", language) },
-                                icon = "📝",
+                                icon = "",
                                 isAr = isAr
                             )
 
