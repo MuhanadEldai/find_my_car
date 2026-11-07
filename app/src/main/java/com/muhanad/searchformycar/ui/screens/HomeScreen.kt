@@ -7,6 +7,7 @@ import android.net.NetworkCapabilities
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -104,9 +105,12 @@ fun HomeScreen(
     // Auto-sliding Carousel Banner (slides every 4 seconds)
     LaunchedEffect(pagerState) {
         while (true) {
-            delay(4000.milliseconds)
+            delay(5000.milliseconds) // 👈 Slide interval frequency (4000ms = 4 seconds)
             val nextPage = (pagerState.currentPage + 1) % instructionSlides.size
-            pagerState.animateScrollToPage(nextPage)
+            pagerState.animateScrollToPage(
+                page = nextPage,
+                animationSpec = tween(durationMillis = 800) // 👈 Slide animation transition speed (600ms)
+            )
         }
     }
 

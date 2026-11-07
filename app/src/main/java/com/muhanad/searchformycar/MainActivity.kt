@@ -13,7 +13,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -46,7 +45,7 @@ class MainActivity : ComponentActivity() {
             var isDarkMode by remember { mutableStateOf(prefs.getBoolean("dark_mode", false)) }
             var language by remember { mutableStateOf(prefs.getString("language", "ar") ?: "ar") }
             var currentTab by remember { mutableIntStateOf(0) }
-            var currentScreen by remember { mutableStateOf("main") } // "main" or "settings"
+            var isAboutOpen by remember { mutableStateOf(false) }
 
             val isAr = language == "ar"
             val activity = context as? ComponentActivity
@@ -81,7 +80,7 @@ class MainActivity : ComponentActivity() {
             // Handle back button press gracefully
             BackHandler(enabled = true) {
                 when {
-                    currentScreen == "settings" -> currentScreen = "main"
+                    isAboutOpen -> isAboutOpen = false
                     currentTab != 0 -> currentTab = 0
                     else -> finish()
                 }
@@ -91,19 +90,10 @@ class MainActivity : ComponentActivity() {
                 LocalLayoutDirection provides if (isAr) LayoutDirection.Rtl else LayoutDirection.Ltr
             ) {
                 SearchformycarTheme(darkTheme = isDarkMode) {
-                    if (currentScreen == "settings") {
-                        SettingsScreen(
-                            isDarkMode = isDarkMode,
-                            onDarkModeChanged = {
-                                isDarkMode = it
-                                prefs.edit { putBoolean("dark_mode", it) }
-                            },
+                    if (isAboutOpen) {
+                        AboutScreen(
                             language = language,
-                            onLanguageChanged = {
-                                language = it
-                                prefs.edit { putString("language", it) }
-                            },
-                            onBack = { currentScreen = "main" }
+                            onBack = { isAboutOpen = false }
                         )
                     } else {
                         Scaffold(
@@ -127,7 +117,7 @@ class MainActivity : ComponentActivity() {
                                                     text = when (currentTab) {
                                                         0 -> AppStrings.get("app_name", language)
                                                         1 -> AppStrings.get("add_report_title", language)
-                                                        2 -> AppStrings.get("about_app", language)
+                                                        2 -> AppStrings.get("settings", language)
                                                         else -> AppStrings.get("app_name", language)
                                                     },
                                                     fontWeight = FontWeight.ExtraBold,
@@ -136,18 +126,7 @@ class MainActivity : ComponentActivity() {
                                                 )
                                             }
                                         },
-                                        actions = {
-                                            IconButton(
-                                                onClick = { currentScreen = "settings" },
-                                                modifier = Modifier.padding(end = 10.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Settings,
-                                                    contentDescription = AppStrings.get("settings", language),
-                                                    tint = Color.White
-                                                )
-                                            }
-                                        },
+
                                         colors = TopAppBarDefaults.topAppBarColors(
                                             containerColor = Color.Transparent
                                         )
@@ -188,8 +167,8 @@ class MainActivity : ComponentActivity() {
                                         NavigationBarItem(
                                             selected = currentTab == 2,
                                             onClick = { currentTab = 2 },
-                                            icon = { Icon(Icons.Default.Info, contentDescription = AppStrings.get("about_app", language)) },
-                                            label = { Text(AppStrings.get("about_app", language)) },
+                                            icon = { Icon(Icons.Default.Settings, contentDescription = AppStrings.get("settings", language)) },
+                                            label = { Text(AppStrings.get("settings", language)) },
                                             colors = navItemColors
                                         )
                                     }
@@ -217,8 +196,18 @@ class MainActivity : ComponentActivity() {
                                     1 -> AddReportScreen(
                                         language = language
                                     )
-                                    2 -> AboutScreen(
-                                        language = language
+                                    2 -> SettingsScreen(
+                                        isDarkMode = isDarkMode,
+                                        onDarkModeChanged = {
+                                            isDarkMode = it
+                                            prefs.edit { putBoolean("dark_mode", it) }
+                                        },
+                                        language = language,
+                                        onLanguageChanged = {
+                                            language = it
+                                            prefs.edit { putString("language", it) }
+                                        },
+                                        onOpenAbout = { isAboutOpen = true }
                                     )
                                 }
                             }

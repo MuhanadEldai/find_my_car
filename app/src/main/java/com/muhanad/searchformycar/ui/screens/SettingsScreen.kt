@@ -8,9 +8,14 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,7 +36,8 @@ fun SettingsScreen(
     onDarkModeChanged: (Boolean) -> Unit,
     language: String,
     onLanguageChanged: (String) -> Unit,
-    onBack: () -> Unit
+    onOpenAbout: (() -> Unit)? = null,
+    onBack: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
@@ -64,46 +70,12 @@ fun SettingsScreen(
         ).show()
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            Surface(
-                shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp),
-                color = MaterialTheme.colorScheme.scrim,
-                shadowElevation = 8.dp,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                TopAppBar(
-                    title = {
-                        Text(
-                            if (isAr) "الإعدادات" else "Settings",
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 22.sp,
-                            color = Color.White,
-                            textAlign = if (isAr) TextAlign.Right else TextAlign.Left,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp)
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = if (isAr) "رجوع" else "Back",
-                                tint = Color.White
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
-                )
-            }
-        }
-    ) { innerPadding ->
+    val settingsContent = @Composable { paddingValues: PaddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -119,7 +91,7 @@ fun SettingsScreen(
                     horizontalAlignment = if (isAr) Alignment.End else Alignment.Start
                 ) {
                     Text(
-                        if (isAr) "لغة التطبيق" else "App Language)",
+                        if (isAr) "لغة التطبيق" else "App Language",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
@@ -230,6 +202,95 @@ fun SettingsScreen(
                     }
                 }
             }
+
+            // About App Card
+            if (onOpenAbout != null) {
+                Card(
+                    onClick = onOpenAbout,
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (isAr) Icons.AutoMirrored.Filled.KeyboardArrowLeft else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(horizontalAlignment = if (isAr) Alignment.End else Alignment.Start) {
+                                Text(
+                                    if (isAr) "حول التطبيق" else "About App",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                                Text(
+                                    if (isAr) "الإصدار 3.0.0 • أرقام التواصل والدعم الفني" else "Version 3.0.0 • Support & App Info",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    if (onBack != null) {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+            topBar = {
+                Surface(
+                    shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp),
+                    color = MaterialTheme.colorScheme.scrim,
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    TopAppBar(
+                        title = {
+                            Text(
+                                if (isAr) "الإعدادات" else "Settings",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 22.sp,
+                                color = Color.White,
+                                textAlign = if (isAr) TextAlign.Right else TextAlign.Left,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp)
+                            )
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = if (isAr) "رجوع" else "Back",
+                                    tint = Color.White
+                                )
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                    )
+                }
+            }
+        ) { innerPadding ->
+            settingsContent(innerPadding)
+        }
+    } else {
+        settingsContent(PaddingValues(0.dp))
     }
 }
