@@ -14,9 +14,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -53,7 +53,7 @@ fun AboutScreen(
 
     val primarySupportPhone = "+249928024419"
     val whatsappSupportPhone = "+249928024419"
-    val supportEmail = "support@searchformycar.com"
+    val facebookUrl = "https://www.facebook.com/share/1Z7jqykEnv"
 
     val aboutContent = @Composable { paddingValues: PaddingValues ->
         Column(
@@ -274,14 +274,14 @@ fun AboutScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Email Support Button
+                    // Facebook Support Button (Replacing Email)
                     OutlinedButton(
                         onClick = {
-                            val intent = Intent(Intent.ACTION_SENDTO, "mailto:$supportEmail".toUri())
+                            val intent = Intent(Intent.ACTION_VIEW, facebookUrl.toUri())
                             try {
                                 context.startActivity(intent)
                             } catch (_: Exception) {
-                                Toast.makeText(context, AppStrings.get("email_failed", language), Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, AppStrings.get("facebook_failed", language), Toast.LENGTH_SHORT).show()
                             }
                         },
                         shape = RoundedCornerShape(14.dp),
@@ -297,24 +297,24 @@ fun AboutScreen(
                             if (!isAr) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
-                                        imageVector = Icons.Default.Email,
+                                        imageVector = Icons.Default.Public,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
+                                        tint = Color(0xFF1877F2),
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(AppStrings.get("support_email", language), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                    Text(AppStrings.get("support_facebook", language), fontSize = 14.sp, fontWeight = FontWeight.Medium)
                                 }
-                                Text(supportEmail, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                Text("Facebook", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1877F2))
                             } else {
-                                Text(supportEmail, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                Text("Facebook", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1877F2))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(AppStrings.get("support_email", language), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                    Text(AppStrings.get("support_facebook", language), fontSize = 14.sp, fontWeight = FontWeight.Medium)
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Icon(
-                                        imageVector = Icons.Default.Email,
+                                        imageVector = Icons.Default.Public,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
+                                        tint = Color(0xFF1877F2),
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }

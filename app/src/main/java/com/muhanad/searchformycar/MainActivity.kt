@@ -189,9 +189,7 @@ class MainActivity : ComponentActivity() {
                                 when (tab) {
                                     0 -> HomeScreen(
                                         repository = repository,
-                                        isDarkMode = isDarkMode,
-                                        language = language,
-                                        onSelectTab = { currentTab = it }
+                                        language = language
                                     )
                                     1 -> AddReportScreen(
                                         language = language

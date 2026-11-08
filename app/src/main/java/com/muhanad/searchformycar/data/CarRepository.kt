@@ -6,11 +6,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
 sealed class SearchResult {
-    data class Success(val car: CarModel?) : SearchResult()
+    data class Success(val cars: List<CarModel>) : SearchResult()
     data class NetworkError(val message: String) : SearchResult()
 }
 
-data class CarStats(val total: Int, val missing: Int, val found: Int)
+data class CarStats(val total: Int, val missing: Int, val found: Int, val delivered: Int)
 
 class CarRepository(context: Context? = null) {
     private var appContext: Context? = context?.applicationContext
@@ -54,7 +54,7 @@ class CarRepository(context: Context? = null) {
             color = "فضي",
             phone = "+249987654321",
             description = "فقدت بالقرب من شارع الهجرة",
-            status = "مفقود"
+            status = "تم تسليمها"
         )
     )
 
@@ -68,6 +68,7 @@ class CarRepository(context: Context? = null) {
                 putInt("total", stats.total)
                 putInt("missing", stats.missing)
                 putInt("found", stats.found)
+                putInt("delivered", stats.delivered)
                 putLong("fetch_time", System.currentTimeMillis())
                 apply()
             }
@@ -81,7 +82,8 @@ class CarRepository(context: Context? = null) {
                 val total = prefs.getInt("total", 0)
                 val missing = prefs.getInt("missing", 0)
                 val found = prefs.getInt("found", 0)
-                val stats = CarStats(total = total, missing = missing, found = found)
+                val delivered = prefs.getInt("delivered", 0)
+                val stats = CarStats(total = total, missing = missing, found = found, delivered = delivered)
                 cachedStats = stats
                 return stats
             }
@@ -90,7 +92,7 @@ class CarRepository(context: Context? = null) {
     }
 
     fun getCachedStatistics(): CarStats {
-        return cachedStats ?: loadStatsFromPrefs() ?: CarStats(120, 85, 35)
+        return cachedStats ?: loadStatsFromPrefs() ?: CarStats(120, 70, 30, 20)
     }
 
     /**
@@ -124,7 +126,14 @@ class CarRepository(context: Context? = null) {
                     .await()
                 val found = foundSnapshot.count.toInt()
 
-                val stats = CarStats(total = total, missing = missing, found = found)
+                val deliveredSnapshot = db.collection("cars")
+                    .whereEqualTo("sts", "تم تسليمها")
+                    .count()
+                    .get(AggregateSource.SERVER)
+                    .await()
+                val delivered = deliveredSnapshot.count.toInt()
+
+                val stats = CarStats(total = total, missing = missing, found = found, delivered = delivered)
                 cachedStats = stats
                 lastStatsFetchTime = currentTime
                 saveStatsToPrefs(stats)
@@ -142,8 +151,9 @@ class CarRepository(context: Context? = null) {
 
         val totalMock = mockCars.size
         val missingMock = mockCars.count { it.status == "مفقود" }
-        val foundMock = totalMock - missingMock
-        val fallback = CarStats(total = totalMock + 120, missing = missingMock + 85, found = foundMock + 35)
+        val foundMock = mockCars.count { it.status == "تم العثور عليها" }
+        val deliveredMock = mockCars.count { it.status == "تم تسليمها" }
+        val fallback = CarStats(total = totalMock + 120, missing = missingMock + 70, found = foundMock + 30, delivered = deliveredMock + 20)
         cachedStats = fallback
         return fallback
     }
@@ -153,8 +163,10 @@ class CarRepository(context: Context? = null) {
         cachedSearchQuery = query
         if (query.length < 3) {
             cachedSearchResult = null
-            return SearchResult.Success(null)
+            return SearchResult.Success(emptyList())
         }
+
+        val results = mutableListOf<CarModel>()
 
         try {
             firestore?.let { db ->
@@ -162,35 +174,40 @@ class CarRepository(context: Context? = null) {
                     .get()
                     .await()
                 
-                val matchedDoc = snapshot.documents.find { doc ->
+                val matchedDocs = snapshot.documents.filter { doc ->
                     val vin = doc.getString("vin") ?: doc.getString("chassisNumber") ?: ""
                     val docId = doc.id
-                    vin.contains(query, ignoreCase = true) || docId.contains(query, ignoreCase = true)
+                    vin.equals(query, ignoreCase = true) || docId.equals(query, ignoreCase = true)
                 }
 
-                if (matchedDoc != null) {
+                for (doc in matchedDocs) {
                     val car = CarModel(
-                        id = matchedDoc.id,
-                        chassisNumber = matchedDoc.getString("vin") ?: matchedDoc.getString("chassisNumber") ?: query,
-                        carModel = matchedDoc.getString("mdl") ?: matchedDoc.getString("carModel") ?: "غير معروف",
-                        licensePlate = matchedDoc.getString("plt") ?: matchedDoc.getString("licensePlate") ?: "",
-                        color = matchedDoc.getString("clr") ?: matchedDoc.getString("color") ?: "",
-                        phone = matchedDoc.getString("phn") ?: matchedDoc.getString("phone") ?: "",
-                        description = matchedDoc.getString("dsc") ?: matchedDoc.getString("description") ?: "",
-                        status = matchedDoc.getString("sts") ?: matchedDoc.getString("status") ?: "مفقود"
+                        id = doc.id,
+                        chassisNumber = doc.getString("vin") ?: doc.getString("chassisNumber") ?: query,
+                        carModel = doc.getString("mdl") ?: doc.getString("carModel") ?: "غير معروف",
+                        licensePlate = doc.getString("plt") ?: doc.getString("licensePlate") ?: "",
+                        color = doc.getString("clr") ?: doc.getString("color") ?: "",
+                        phone = doc.getString("phn") ?: doc.getString("phone") ?: "",
+                        description = doc.getString("dsc") ?: doc.getString("description") ?: "",
+                        status = doc.getString("sts") ?: doc.getString("status") ?: "مفقود"
                     )
-                    cachedSearchResult = car
-                    return SearchResult.Success(car)
+                    results.add(car)
                 }
             }
         } catch (e: Exception) {
             return SearchResult.NetworkError(e.localizedMessage ?: "حدث خطأ في الاتصال بالشبكة")
         }
 
-        // Fallback search in mock list with partial match (contains)
-        val found = mockCars.find { it.chassisNumber.contains(query, ignoreCase = true) }
-        cachedSearchResult = found
-        return SearchResult.Success(found)
+        // Also search in mock list with exact match
+        val mockMatches = mockCars.filter { it.chassisNumber.equals(query, ignoreCase = true) || it.id.equals(query, ignoreCase = true) }
+        for (mock in mockMatches) {
+            if (results.none { it.id == mock.id && it.chassisNumber.equals(mock.chassisNumber, ignoreCase = true) }) {
+                results.add(mock)
+            }
+        }
+
+        cachedSearchResult = results.firstOrNull()
+        return SearchResult.Success(results)
     }
 
 }

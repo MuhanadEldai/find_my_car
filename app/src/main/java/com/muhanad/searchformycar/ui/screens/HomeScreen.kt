@@ -56,16 +56,14 @@ data class InstructionSlide(
 @Composable
 fun HomeScreen(
     repository: CarRepository,
-    isDarkMode: Boolean,
-    language: String,
-    onSelectTab: (Int) -> Unit
+    language: String
 ) {
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
     var chassisQuery by rememberSaveable { mutableStateOf(repository.cachedSearchQuery) }
     var searchResultState by remember { 
         mutableStateOf<SearchResult?>(
-            if (repository.cachedSearchQuery.isNotBlank()) SearchResult.Success(repository.cachedSearchResult) else null
+            if (repository.cachedSearchQuery.isNotBlank()) SearchResult.Success(listOfNotNull(repository.cachedSearchResult)) else null
         )
     }
     var isLoading by remember { mutableStateOf(false) }
@@ -80,36 +78,32 @@ fun HomeScreen(
                 titleEn = "",
                 descriptionAr = " ",
                 descriptionEn = ""
-
             ),
-
             InstructionSlide(
                 titleAr = "",
                 titleEn = "File a Missing Car Report",
                 descriptionAr = "اكثر من 10000 بلاغ عن سيارة مفقودة ",
                 descriptionEn = "If not found, submit a report to alert search team instantly"
-                
             ),
             InstructionSlide(
                 titleAr = "",
                 titleEn = "Direct WhatsApp Support",
                 descriptionAr = "اكثر من 5000 سيارة تم العثور عليها",
                 descriptionEn = "Connect easily with car owner or support team in one click"
-                
             )
         )
     }
 
     val pagerState = rememberPagerState(pageCount = { 3 })
 
-    // Auto-sliding Carousel Banner (slides every 4 seconds)
+    // Auto-sliding Carousel Banner (slides every 5 seconds)
     LaunchedEffect(pagerState) {
         while (true) {
-            delay(5000.milliseconds) // 👈 Slide interval frequency (4000ms = 4 seconds)
+            delay(5000.milliseconds)
             val nextPage = (pagerState.currentPage + 1) % instructionSlides.size
             pagerState.animateScrollToPage(
                 page = nextPage,
-                animationSpec = tween(durationMillis = 800) // 👈 Slide animation transition speed (600ms)
+                animationSpec = tween(durationMillis = 800)
             )
         }
     }
@@ -332,127 +326,148 @@ fun HomeScreen(
         // Search Results handling
         when (val state = searchResultState) {
             is SearchResult.Success -> {
-                if (state.car != null) {
-                    val car = state.car
-                    val statusText = if (car.status == "مفقود") AppStrings.get("missing", language) else AppStrings.get("found", language)
-                    Card(
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
-                        modifier = Modifier.fillMaxWidth()
+                if (state.cars.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(20.dp)
-                        ) {
-                            // Card Header
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Badge(
-                                    containerColor = if (car.status == "مفقود") Color(0xFFE53935) else Color(0xFF2E7D32)
-                                ) {
-                                    Text(
-                                        text = statusText,
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = car.carModel,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 18.sp,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Icon(
-                                        imageVector = Icons.Default.CarRepair,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
+                        for (car in state.cars) {
+                            val (statusText, badgeColor, statusDesc) = when (car.status) {
+                                "مفقود" -> Triple(AppStrings.get("missing", language), Color(0xFFE53935), AppStrings.get("status_desc_missing", language))
+                                "تم العثور عليها" -> Triple(AppStrings.get("found", language), Color(0xFF2E7D32), AppStrings.get("status_desc_found", language))
+                                "تم تسليمها" -> Triple(AppStrings.get("delivered", language), Color(0xFF1976D2), AppStrings.get("status_desc_delivered", language))
+                                else -> Triple(AppStrings.get("missing", language), Color(0xFFE53935), AppStrings.get("status_desc_missing", language))
                             }
 
-                            Spacer(modifier = Modifier.height(16.dp))
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // Details
-                            StructuredDetailRow(
-                                label = AppStrings.get("chassis_number", language),
-                                value = car.chassisNumber,
-                                icon = "",
-                                isAr = isAr
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            StructuredDetailRow(
-                                label = AppStrings.get("license_plate", language),
-                                value = car.licensePlate.ifEmpty { AppStrings.get("not_specified", language) },
-                                icon = "",
-                                isAr = isAr
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            StructuredDetailRow(
-                                label = AppStrings.get("color", language),
-                                value = car.color.ifEmpty { AppStrings.get("not_specified", language) },
-                                icon = "",
-                                isAr = isAr
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            StructuredDetailRow(
-                                label = AppStrings.get("phone", language),
-                                value = car.phone.ifEmpty { AppStrings.get("not_available", language) },
-                                icon = "",
-                                isAr = isAr
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            StructuredDetailRow(
-                                label = AppStrings.get("details", language),
-                                value = car.description.ifEmpty { AppStrings.get("no_details", language) },
-                                icon = "",
-                                isAr = isAr
-                            )
-
-                            Spacer(modifier = Modifier.height(20.dp))
-
-                            // WhatsApp Button
-                            if (car.phone.isNotBlank()) {
-                                Button(
-                                    onClick = {
-                                        val phone = car.phone.trim()
-                                        val message = if (isAr) {
-                                            "مرحباً، أستفسر بخصوص سيارتك المسجلة برقم الشاسي: ${car.chassisNumber}"
-                                        } else {
-                                            "Hello, inquiring about your car registered with chassis number: ${car.chassisNumber}"
-                                        }
-                                        val intent = Intent(Intent.ACTION_VIEW).apply {
-                                            data = "https://api.whatsapp.com/send?phone=$phone&text=${Uri.encode(message)}".toUri()
-                                        }
-                                        try {
-                                            context.startActivity(intent)
-                                        } catch (_: Exception) {
-                                            Toast.makeText(context, AppStrings.get("whatsapp_not_installed", language), Toast.LENGTH_SHORT).show()
-                                        }
-                                    },
-                                    shape = RoundedCornerShape(18.dp),
-                                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp, pressedElevation = 2.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                            Card(
+                                shape = RoundedCornerShape(24.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(52.dp)
+                                        .padding(20.dp)
                                 ) {
-                                    Text(AppStrings.get("chat_owner_whatsapp", language), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                    // Card Header
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Badge(
+                                            containerColor = badgeColor
+                                        ) {
+                                            Text(
+                                                text = statusText,
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                            )
+                                        }
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = car.carModel,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 18.sp,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Icon(
+                                                imageVector = Icons.Default.CarRepair,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = statusDesc,
+                                        fontSize = 12.sp,
+                                        color = Color.Gray,
+                                        textAlign = if (isAr) TextAlign.Right else TextAlign.Left,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    // Details
+                                    StructuredDetailRow(
+                                        label = AppStrings.get("chassis_number", language),
+                                        value = car.chassisNumber,
+                                        icon = "",
+                                        isAr = isAr
+                                    )
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    StructuredDetailRow(
+                                        label = AppStrings.get("license_plate", language),
+                                        value = car.licensePlate.ifEmpty { AppStrings.get("not_specified", language) },
+                                        icon = "",
+                                        isAr = isAr
+                                    )
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    StructuredDetailRow(
+                                        label = AppStrings.get("color", language),
+                                        value = car.color.ifEmpty { AppStrings.get("not_specified", language) },
+                                        icon = "",
+                                        isAr = isAr
+                                    )
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    StructuredDetailRow(
+                                        label = AppStrings.get("phone", language),
+                                        value = car.phone.ifEmpty { AppStrings.get("not_available", language) },
+                                        icon = "",
+                                        isAr = isAr
+                                    )
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    StructuredDetailRow(
+                                        label = AppStrings.get("details", language),
+                                        value = car.description.ifEmpty { AppStrings.get("no_details", language) },
+                                        icon = "",
+                                        isAr = isAr
+                                    )
+
+                                    Spacer(modifier = Modifier.height(20.dp))
+
+                                    // WhatsApp Button
+                                    if (car.phone.isNotBlank()) {
+                                        Button(
+                                            onClick = {
+                                                val phone = car.phone.trim()
+                                                val message = if (isAr) {
+                                                    "مرحباً، أستفسر بخصوص سيارتك المسجلة برقم الشاسي: ${car.chassisNumber}"
+                                                } else {
+                                                    "Hello, inquiring about your car registered with chassis number: ${car.chassisNumber}"
+                                                }
+                                                val intent = Intent(Intent.ACTION_VIEW).apply {
+                                                    data = "https://api.whatsapp.com/send?phone=$phone&text=${Uri.encode(message)}".toUri()
+                                                }
+                                                try {
+                                                    context.startActivity(intent)
+                                                } catch (_: Exception) {
+                                                    Toast.makeText(context, AppStrings.get("whatsapp_not_installed", language), Toast.LENGTH_SHORT).show()
+                                                }
+                                            },
+                                            shape = RoundedCornerShape(18.dp),
+                                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp, pressedElevation = 2.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(52.dp)
+                                        ) {
+                                            Text(AppStrings.get("chat_owner_whatsapp", language), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 } else {
-                    // Car not found
+                    // Car not found -> Direct WhatsApp Support Card
                     Card(
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -474,22 +489,41 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = AppStrings.get("add_report_prompt", language),
+                                text = if (isAr) "للاستفسار أو الإبلاغ الفوري، تواصل معنا مباشرة عبر واتساب" else "For inquiry or immediate reporting, contact us via WhatsApp",
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
-                                onClick = { onSelectTab(1) },
-                                shape = RoundedCornerShape(16.dp),
+                                onClick = {
+                                    val targetPhone = "249995333234"
+                                    val message = if (isAr) {
+                                        "مرحباً، أبحث عن سيارة برقم الشاسي: $chassisQuery ولم أجدها في قاعدة البيانات وأريد الإبلاغ عنها."
+                                    } else {
+                                        "Hello, I searched for car with chassis: $chassisQuery, it was not found in database and I want to report it."
+                                    }
+                                    val uri = "https://api.whatsapp.com/send?phone=+$targetPhone&text=${Uri.encode(message)}".toUri()
+                                    val intent = Intent(Intent.ACTION_VIEW, uri)
+                                    try {
+                                        context.startActivity(intent)
+                                    } catch (_: Exception) {
+                                        Toast.makeText(context, AppStrings.get("whatsapp_not_installed", language), Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                shape = RoundedCornerShape(18.dp),
                                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp, pressedElevation = 2.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onTertiaryFixed),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(50.dp)
+                                    .height(52.dp)
                             ) {
-                                Text(AppStrings.get("add_new_report_btn", language), fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color.White)
+                                Text(
+                                    text = if (isAr) "إبلاغ والاستفسار عبر واتساب" else "Inquire & Report via WhatsApp",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = Color.White
+                                )
                             }
                         }
                     }
@@ -535,29 +569,49 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Statistics Cards Row
-        Row(
+        // Statistics Cards (2x2 Grid for 4 States)
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            StatCard(
-                modifier = Modifier.weight(1f),
-                title = AppStrings.get("total_reports", language),
-                count = "${stats.total}",
-                icon = "📊"
-            )
-            StatCard(
-                modifier = Modifier.weight(1f),
-                title = AppStrings.get("missing_cars", language),
-                count = "${stats.missing}",
-                icon = "⚠️"
-            )
-            StatCard(
-                modifier = Modifier.weight(1f),
-                title = AppStrings.get("found_cars", language),
-                count = "${stats.found}",
-                icon = "✅"
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                StatCard(
+                    modifier = Modifier.weight(1f),
+                    title = AppStrings.get("total_reports", language),
+                    count = "${stats.total}",
+                    description = AppStrings.get("stat_desc_total", language),
+                    icon = ""
+                )
+                StatCard(
+                    modifier = Modifier.weight(1f),
+                    title = AppStrings.get("missing_cars", language),
+                    count = "${stats.missing}",
+                    description = AppStrings.get("stat_desc_missing", language),
+                    icon = "️"
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                StatCard(
+                    modifier = Modifier.weight(1f),
+                    title = AppStrings.get("found_cars", language),
+                    count = "${stats.found}",
+                    description = AppStrings.get("stat_desc_found", language),
+                    icon = ""
+                )
+                StatCard(
+                    modifier = Modifier.weight(1f),
+                    title = AppStrings.get("delivered_cars", language),
+                    count = "${stats.delivered}",
+                    description = AppStrings.get("stat_desc_delivered", language),
+                    icon = ""
+                )
+            }
         }
     }
 }
@@ -615,24 +669,24 @@ fun StructuredDetailRow(label: String, value: String, icon: String, isAr: Boolea
 }
 
 @Composable
-fun StatCard(modifier: Modifier = Modifier, title: String, count: String, icon: String) {
+fun StatCard(modifier: Modifier = Modifier, title: String, count: String, description: String, icon: String) {
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = modifier.height(100.dp)
+        modifier = modifier.height(115.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(6.dp),
+                .padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(icon, fontSize = 20.sp)
-            Spacer(modifier = Modifier.height(2.dp))
             Text(count, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-            Text(title, fontSize = 13.sp, color = Color.Gray, textAlign = TextAlign.Center)
+            Text(title, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(description, fontSize = 10.sp, color = Color.Gray, textAlign = TextAlign.Center, maxLines = 1)
         }
     }
 }

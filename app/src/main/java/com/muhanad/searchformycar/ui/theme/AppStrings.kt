@@ -20,6 +20,20 @@ object AppStrings {
             "total_reports" -> if (isAr) "إجمالي البلاغات" else "Total Reports"
             "missing_cars" -> if (isAr) "سيارات مفقودة" else "Missing Cars"
             "found_cars" -> if (isAr) "تم العثور عليها" else "Found Cars"
+            "delivered_cars" -> if (isAr) "تم تسليمها" else "Delivered Cars"
+            "missing" -> if (isAr) "مفقود" else "Missing"
+            "found" -> if (isAr) "تم العثور عليها" else "Found"
+            "delivered" -> if (isAr) "تم تسليمها" else "Delivered"
+
+            "stat_desc_total" -> if (isAr) "إجمالي البلاغات المسجلة" else "Total registered reports"
+            "stat_desc_missing" -> if (isAr) "سيارات ما زالت مفقودة" else "Cars still missing"
+            "stat_desc_found" -> if (isAr) "تم تحديد مكانها بنجاح" else "Located successfully"
+            "stat_desc_delivered" -> if (isAr) "تم تسليمها للمالك بنجاح" else "Handed over to owner"
+
+            "status_desc_missing" -> if (isAr) "سيارة مفقودة - يرجى المساعدة في البحث" else "Missing car - please help search"
+            "status_desc_found" -> if (isAr) "تم العثور على السيارة وجاري البحث عن صاحبها" else "Car found, coordinating handover"
+            "status_desc_delivered" -> if (isAr) "تم تسليم السيارة لصاحبها بنجاح" else "Car successfully delivered to owner"
+
             "car_model" -> if (isAr) "نوع وموديل السيارة" else "Car Model"
             "license_plate" -> if (isAr) "رقم اللوحة" else "License Plate"
             "color" -> if (isAr) "لون السيارة" else "Car Color"
@@ -27,8 +41,6 @@ object AppStrings {
             "phone" -> if (isAr) "رقم الهاتف" else "Phone Number"
             "details" -> if (isAr) "تفاصيل البلاغ" else "Report Details"
             "status" -> if (isAr) "الحالة" else "Status"
-            "missing" -> if (isAr) "مفقود" else "Missing"
-            "found" -> if (isAr) "تم العثور عليها" else "Found"
             "not_specified" -> if (isAr) "غير محدد" else "Not specified"
             "not_available" -> if (isAr) "غير متوفر" else "Not available"
             "no_details" -> if (isAr) "لا توجد تفاصيل إضافية" else "No additional details"
@@ -64,17 +76,20 @@ object AppStrings {
 
             // About Screen
             "about_desc_title" -> if (isAr) "عن التطبيق" else "About App"
-            "about_desc" -> if (isAr) "تطبيق رسمي للبحث عن السيارات المفقودة والتبليغ عنها في السودان بكل سهولة وأمان عبر ربط مباشر بقاعدة بيانات وفريق رصد متخصصين." else "Official app to search for and report missing cars in Sudan easily and securely with real-time database connection."
+            "about_desc" -> if (isAr) "المنصّة الأولى في السودان لاسترجاع السيارات المفقودة\n" +
+                    "نؤمن أن الصدق، الأمانة، والسرعة في العمل هي أساس ثقة الناس فينا  💪\n" +
+                    "هدفنا نرجّع كل عربية لأصحابها، ونكون اليد الواحدة البتساعد كل سوداني يلقى عربيتو "
+            else "Official app to search for and report missing cars in Sudan easily and securely with real-time database connection."
             "contact_us" -> if (isAr) "📞 أرقام التواصل والدعم الفني" else "📞 Contact Us & Support"
             "call_help_center" -> if (isAr) "اتصال بمركز المساعدة" else "Call Help Center"
             "whatsapp_support" -> if (isAr) "واتساب الدعم الفني" else "WhatsApp"
-            "support_email" -> if (isAr) "البريد الإلكتروني" else "Email"
+            "support_facebook" -> if (isAr) "صفحة فتش لي عربيتي في الفيسبوك" else "Official Facebook Page"
             "app_version" -> if (isAr) "الإصدار 3.0.0 • FOUND 2024" else "Version 3.0.0 • FOUND 2024"
             "rate_app" -> if (isAr) "تقييم التطبيق على متجر بلاي" else "Rate App on Play Store"
             "check_updates" -> if (isAr) "التحقق من وجود تحديثات جديدة" else "Check for New Updates"
             "app_up_to_date" -> if (isAr) "تطبيقك محدّث لأحدث إصدار" else "Your app is up to date"
             "call_failed" -> if (isAr) "تعذر إجراء الاتصال" else "Unable to make phone call"
-            "email_failed" -> if (isAr) "تعذر فتح البريد الإلكتروني" else "Unable to open email app"
+            "facebook_failed" -> if (isAr) "تعذر فتح صفحة الفيسبوك" else "Unable to open Facebook page"
 
             else -> key
         }
