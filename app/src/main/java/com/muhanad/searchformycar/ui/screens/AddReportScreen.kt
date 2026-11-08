@@ -202,7 +202,6 @@ fun AddReportScreen(
                         .fillMaxWidth()
                         .height(52.dp)
                 ) {
-                    Icon(imageVector = Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Color.White)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(AppStrings.get("send_whatsapp_report", language), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
