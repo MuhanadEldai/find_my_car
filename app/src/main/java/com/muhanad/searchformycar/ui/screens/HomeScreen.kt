@@ -454,7 +454,7 @@ fun HomeScreen(
                                             },
                                             shape = RoundedCornerShape(18.dp),
                                             elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp, pressedElevation = 2.dp),
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .height(52.dp)
@@ -513,7 +513,7 @@ fun HomeScreen(
                                 },
                                 shape = RoundedCornerShape(18.dp),
                                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp, pressedElevation = 2.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(52.dp)
@@ -582,15 +582,13 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f),
                     title = AppStrings.get("total_reports", language),
                     count = "${stats.total}",
-                    description = AppStrings.get("stat_desc_total", language),
-                    icon = ""
+                    description = AppStrings.get("stat_desc_total", language)
                 )
                 StatCard(
                     modifier = Modifier.weight(1f),
                     title = AppStrings.get("missing_cars", language),
                     count = "${stats.missing}",
-                    description = AppStrings.get("stat_desc_missing", language),
-                    icon = "️"
+                    description = AppStrings.get("stat_desc_missing", language)
                 )
             }
             Row(
@@ -601,15 +599,13 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f),
                     title = AppStrings.get("found_cars", language),
                     count = "${stats.found}",
-                    description = AppStrings.get("stat_desc_found", language),
-                    icon = ""
+                    description = AppStrings.get("stat_desc_found", language)
                 )
                 StatCard(
                     modifier = Modifier.weight(1f),
                     title = AppStrings.get("delivered_cars", language),
                     count = "${stats.delivered}",
-                    description = AppStrings.get("stat_desc_delivered", language),
-                    icon = ""
+                    description = AppStrings.get("stat_desc_delivered", language)
                 )
             }
         }
@@ -669,7 +665,7 @@ fun StructuredDetailRow(label: String, value: String, icon: String, isAr: Boolea
 }
 
 @Composable
-fun StatCard(modifier: Modifier = Modifier, title: String, count: String, description: String, icon: String) {
+fun StatCard(modifier: Modifier = Modifier, title: String, count: String, description: String) {
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -683,10 +679,10 @@ fun StatCard(modifier: Modifier = Modifier, title: String, count: String, descri
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(count, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-            Text(title, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
+            Text(count, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
             Spacer(modifier = Modifier.height(2.dp))
-            Text(description, fontSize = 10.sp, color = Color.Gray, textAlign = TextAlign.Center, maxLines = 1)
+            Text(description, fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center, maxLines = 1)
         }
     }
 }

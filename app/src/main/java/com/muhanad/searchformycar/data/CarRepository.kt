@@ -4,6 +4,8 @@ import android.content.Context
 import com.google.firebase.firestore.AggregateSource
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.time.Duration.Companion.milliseconds
 
 sealed class SearchResult {
     data class Success(val cars: List<CarModel>) : SearchResult()
@@ -109,7 +111,10 @@ class CarRepository(context: Context? = null) {
         try {
             firestore?.let { db ->
                 // Native Firestore count() aggregation transfers only bytes, no full documents
-                val totalSnapshot = db.collection("cars").count().get(AggregateSource.SERVER).await()
+                val totalSnapshot = withTimeoutOrNull(6000.milliseconds) {
+                    db.collection("cars").count().get(AggregateSource.SERVER).await()
+                } ?: return@let
+
                 val total = totalSnapshot.count.toInt()
 
                 val missingSnapshot = db.collection("cars")
@@ -169,18 +174,49 @@ class CarRepository(context: Context? = null) {
         val results = mutableListOf<CarModel>()
 
         try {
-            firestore?.let { db ->
-                val snapshot = db.collection("cars")
+            val db = firestore
+            if (db == null) {
+                val mockMatches = mockCars.filter { it.chassisNumber.equals(query, ignoreCase = true) || it.id.equals(query, ignoreCase = true) }
+                return SearchResult.Success(mockMatches)
+            }
+
+            // 1. Targeted query on "vin" field (Only fetches exact matching document(s) - 1 read on free plan)
+            val vinSnapshot = withTimeoutOrNull(6000.milliseconds) {
+                db.collection("cars")
+                    .whereEqualTo("vin", query)
                     .get()
                     .await()
-                
-                val matchedDocs = snapshot.documents.filter { doc ->
-                    val vin = doc.getString("vin") ?: doc.getString("chassisNumber") ?: ""
-                    val docId = doc.id
-                    vin.equals(query, ignoreCase = true) || docId.equals(query, ignoreCase = true)
-                }
+            }
 
-                for (doc in matchedDocs) {
+            if (vinSnapshot == null) {
+                return SearchResult.NetworkError("لا يوجد اتصال بالإنترنت. يرجى التحقق من الشبكة.")
+            }
+
+            for (doc in vinSnapshot.documents) {
+                val car = CarModel(
+                    id = doc.id,
+                    chassisNumber = doc.getString("vin") ?: doc.getString("chassisNumber") ?: query,
+                    carModel = doc.getString("mdl") ?: doc.getString("carModel") ?: "غير معروف",
+                    licensePlate = doc.getString("plt") ?: doc.getString("licensePlate") ?: "",
+                    color = doc.getString("clr") ?: doc.getString("color") ?: "",
+                    phone = doc.getString("phn") ?: doc.getString("phone") ?: "",
+                    description = doc.getString("dsc") ?: doc.getString("description") ?: "",
+                    status = doc.getString("sts") ?: doc.getString("status") ?: "مفقود"
+                )
+                if (results.none { it.id == car.id }) {
+                    results.add(car)
+                }
+            }
+
+            // 2. If not found in "vin", check legacy "chassisNumber" field
+            if (results.isEmpty()) {
+                val chassisSnapshot = withTimeoutOrNull(6000.milliseconds) {
+                    db.collection("cars")
+                        .whereEqualTo("chassisNumber", query)
+                        .get()
+                        .await()
+                }
+                chassisSnapshot?.documents?.forEach { doc ->
                     val car = CarModel(
                         id = doc.id,
                         chassisNumber = doc.getString("vin") ?: doc.getString("chassisNumber") ?: query,
@@ -191,7 +227,31 @@ class CarRepository(context: Context? = null) {
                         description = doc.getString("dsc") ?: doc.getString("description") ?: "",
                         status = doc.getString("sts") ?: doc.getString("status") ?: "مفقود"
                     )
-                    results.add(car)
+                    if (results.none { it.id == car.id }) {
+                        results.add(car)
+                    }
+                }
+            }
+
+            // 3. If not found, check document ID directly
+            if (results.isEmpty()) {
+                val docRef = withTimeoutOrNull(6000.milliseconds) {
+                    db.collection("cars").document(query).get().await()
+                }
+                if (docRef != null && docRef.exists()) {
+                    val car = CarModel(
+                        id = docRef.id,
+                        chassisNumber = docRef.getString("vin") ?: docRef.getString("chassisNumber") ?: query,
+                        carModel = docRef.getString("mdl") ?: docRef.getString("carModel") ?: "غير معروف",
+                        licensePlate = docRef.getString("plt") ?: docRef.getString("licensePlate") ?: "",
+                        color = docRef.getString("clr") ?: docRef.getString("color") ?: "",
+                        phone = docRef.getString("phn") ?: docRef.getString("phone") ?: "",
+                        description = docRef.getString("dsc") ?: docRef.getString("description") ?: "",
+                        status = docRef.getString("sts") ?: docRef.getString("status") ?: "مفقود"
+                    )
+                    if (results.none { it.id == car.id }) {
+                        results.add(car)
+                    }
                 }
             }
         } catch (e: Exception) {
