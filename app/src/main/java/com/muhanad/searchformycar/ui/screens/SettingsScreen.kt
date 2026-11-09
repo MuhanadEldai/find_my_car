@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import com.muhanad.searchformycar.ui.theme.AppStrings
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,9 +63,9 @@ fun SettingsScreen(
         Toast.makeText(
             context,
             if (isGranted) {
-                if (isAr) "تم تفعيل الإشعارات بنجاح" else "Notifications enabled successfully"
+                AppStrings.get("notifications_enabled_msg", language)
             } else {
-                if (isAr) "تم رفض إذن الإشعارات" else "Notification permission denied"
+                AppStrings.get("notifications_denied_msg", language)
             },
             Toast.LENGTH_SHORT
         ).show()
@@ -91,11 +92,12 @@ fun SettingsScreen(
                     horizontalAlignment = if (isAr) Alignment.End else Alignment.Start
                 ) {
                     Text(
-                        if (isAr) "لغة التطبيق" else "App Language",
+                        text = AppStrings.get("app_language", language),
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -103,17 +105,25 @@ fun SettingsScreen(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             RadioButton(
-                                selected = language == "ar",
-                                onClick = { onLanguageChanged("ar") }
+                                selected = language == if (isAr) "ar" else "en",
+                                onClick = { onLanguageChanged(if (isAr) "ar" else "en") }
                             )
-                            Text("العربية")
+                            Text(
+                                text = if (isAr) "العربية" else "English",
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 14.sp
+                            )
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             RadioButton(
-                                selected = language == "en",
-                                onClick = { onLanguageChanged("en") }
+                                selected = language == if (isAr) "en" else "ar",
+                                onClick = { onLanguageChanged(if (isAr) "en" else "ar") }
                             )
-                            Text("English")
+                            Text(
+                                text = if (isAr) "English" else "العربية",
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 14.sp
+                            )
                         }
                     }
                 }
@@ -133,26 +143,49 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Switch(
-                        checked = isDarkMode,
-                        onCheckedChange = onDarkModeChanged
-                    )
-                    Column(horizontalAlignment = if (isAr) Alignment.End else Alignment.Start) {
-                        Text(
-                            if (isAr) "الوضع الليلي" else "Dark Mode",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
+                    if (!isAr) {
+                        Column(horizontalAlignment = Alignment.Start) {
+                            Text(
+                                text = AppStrings.get("dark_mode", language),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = AppStrings.get("dark_mode_desc", language),
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = isDarkMode,
+                            onCheckedChange = onDarkModeChanged
                         )
-                        Text(
-                            if (isAr) "تفعيل المظهر الداكن للتطبيق" else "Enable app dark theme",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        Switch(
+                            checked = isDarkMode,
+                            onCheckedChange = onDarkModeChanged
                         )
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = AppStrings.get("dark_mode", language),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = AppStrings.get("dark_mode_desc", language),
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
 
-            // Push Notifications Card (Android 13 / 16+ support)
+            // Push Notifications Card
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -166,39 +199,80 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Switch(
-                        checked = notificationsEnabled,
-                        onCheckedChange = { checked ->
-                            if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                } else {
-                                    notificationsEnabled = true
-                                    prefs.edit { putBoolean("notifications_enabled", true) }
-                                    Toast.makeText(context, if (isAr) "تم تفعيل الإشعارات" else "Notifications enabled", Toast.LENGTH_SHORT).show()
-                                }
-                            } else {
-                                notificationsEnabled = checked
-                                prefs.edit { putBoolean("notifications_enabled", checked) }
-                                Toast.makeText(
-                                    context,
-                                    if (checked) (if (isAr) "تم تفعيل الإشعارات" else "Notifications enabled") else (if (isAr) "تم إيقاف الإشعارات" else "Notifications disabled"),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
+                    if (!isAr) {
+                        Column(horizontalAlignment = Alignment.Start) {
+                            Text(
+                                text = AppStrings.get("push_notifications", language),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = AppStrings.get("push_notifications_desc", language),
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                    )
-                    Column(horizontalAlignment = if (isAr) Alignment.End else Alignment.Start) {
-                        Text(
-                            if (isAr) "الإشعارات الفورية" else "Push Notifications",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
+                        Switch(
+                            checked = notificationsEnabled,
+                            onCheckedChange = { checked ->
+                                if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    } else {
+                                        notificationsEnabled = true
+                                        prefs.edit { putBoolean("notifications_enabled", true) }
+                                        Toast.makeText(context, AppStrings.get("notifications_enabled_msg", language), Toast.LENGTH_SHORT).show()
+                                    }
+                                } else {
+                                    notificationsEnabled = checked
+                                    prefs.edit { putBoolean("notifications_enabled", checked) }
+                                    Toast.makeText(
+                                        context,
+                                        if (checked) AppStrings.get("notifications_enabled_msg", language) else AppStrings.get("notifications_disabled_msg", language),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
                         )
-                        Text(
-                            if (isAr) "تلقي إشعارات الحالات والبلاغات الجديدة" else "Receive instant alerts and report status updates",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        Switch(
+                            checked = notificationsEnabled,
+                            onCheckedChange = { checked ->
+                                if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    } else {
+                                        notificationsEnabled = true
+                                        prefs.edit { putBoolean("notifications_enabled", true) }
+                                        Toast.makeText(context, AppStrings.get("notifications_enabled_msg", language), Toast.LENGTH_SHORT).show()
+                                    }
+                                } else {
+                                    notificationsEnabled = checked
+                                    prefs.edit { putBoolean("notifications_enabled", checked) }
+                                    Toast.makeText(
+                                        context,
+                                        if (checked) AppStrings.get("notifications_enabled_msg", language) else AppStrings.get("notifications_disabled_msg", language),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
                         )
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = AppStrings.get("push_notifications", language),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = AppStrings.get("push_notifications_desc", language),
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
@@ -219,31 +293,64 @@ fun SettingsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = if (isAr) Icons.AutoMirrored.Filled.KeyboardArrowLeft else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Column(horizontalAlignment = if (isAr) Alignment.End else Alignment.Start) {
-                                Text(
-                                    if (isAr) "حول التطبيق" else "About App",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp
+                        if (!isAr) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
                                 )
-                                Text(
-                                    if (isAr) "الإصدار 3.0.0 • أرقام التواصل والدعم الفني" else "Version 3.0.0 • Support & App Info",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(horizontalAlignment = Alignment.Start) {
+                                    Text(
+                                        text = AppStrings.get("about_app", language),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "Version 3.0.0 • Support & App Info",
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(
+                                        text = AppStrings.get("about_app", language),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "الإصدار 3.0.0 • أرقام التواصل والدعم الفني",
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
                         }
                     }
                 }
@@ -264,7 +371,7 @@ fun SettingsScreen(
                     TopAppBar(
                         title = {
                             Text(
-                                if (isAr) "الإعدادات" else "Settings",
+                                AppStrings.get("settings", language),
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 22.sp,
                                 color = Color.White,
@@ -278,7 +385,7 @@ fun SettingsScreen(
                             IconButton(onClick = onBack) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = if (isAr) "رجوع" else "Back",
+                                    contentDescription = AppStrings.get("back", language),
                                     tint = Color.White
                                 )
                             }

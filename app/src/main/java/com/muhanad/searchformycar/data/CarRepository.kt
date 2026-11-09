@@ -27,7 +27,7 @@ class CarRepository(context: Context? = null) {
 
     private var cachedStats: CarStats? = null
     private var lastStatsFetchTime: Long = 0
-    private val CACHE_DURATION_MS = 5 * 60 * 1000L // 5 minutes cache TTL
+    private val CACHE_DURATION_MS = 15 * 60 * 1000L // 15 minutes TTL to save free plan reads
 
     private val firestore: FirebaseFirestore? by lazy {
         try {
@@ -85,8 +85,12 @@ class CarRepository(context: Context? = null) {
                 val missing = prefs.getInt("missing", 0)
                 val found = prefs.getInt("found", 0)
                 val delivered = prefs.getInt("delivered", 0)
+                val fetchTime = prefs.getLong("fetch_time", 0L)
                 val stats = CarStats(total = total, missing = missing, found = found, delivered = delivered)
                 cachedStats = stats
+                if (fetchTime > 0) {
+                    lastStatsFetchTime = fetchTime
+                }
                 return stats
             }
         } catch (_: Exception) {}
@@ -99,13 +103,17 @@ class CarRepository(context: Context? = null) {
 
     /**
      * Efficiently fetches statistics using Firestore native aggregation `count()` queries.
-     * Caches result for 5 minutes to drastically reduce data usage and network reads.
+     * Caches result for 15 minutes to drastically reduce data usage and network reads.
      * Persists results locally in SharedPreferences for offline usage.
      */
     suspend fun getStatistics(forceRefresh: Boolean = false): CarStats {
+        val loaded = cachedStats ?: loadStatsFromPrefs()
         val currentTime = System.currentTimeMillis()
-        if (!forceRefresh && cachedStats != null && lastStatsFetchTime > 0 && (currentTime - lastStatsFetchTime) < CACHE_DURATION_MS) {
-            return cachedStats!!
+
+        // Return cached statistics immediately if within cache TTL (0 Firestore reads)
+        if (!forceRefresh && loaded != null && lastStatsFetchTime > 0 && (currentTime - lastStatsFetchTime) < CACHE_DURATION_MS) {
+            cachedStats = loaded
+            return loaded
         }
 
         try {
@@ -148,7 +156,6 @@ class CarRepository(context: Context? = null) {
             // fallback if offline/error
         }
 
-        val loaded = cachedStats ?: loadStatsFromPrefs()
         if (loaded != null) {
             cachedStats = loaded
             return loaded
@@ -164,7 +171,7 @@ class CarRepository(context: Context? = null) {
     }
 
     suspend fun searchCar(chassis: String): SearchResult {
-        val query = chassis.trim()
+        val query = chassis.convertArabicDigitsToEnglish().trim()
         cachedSearchQuery = query
         if (query.length < 3) {
             cachedSearchResult = null
@@ -270,4 +277,22 @@ class CarRepository(context: Context? = null) {
         return SearchResult.Success(results)
     }
 
+}
+
+fun String.convertArabicDigitsToEnglish(): String {
+    return this.map { char ->
+        when (char) {
+            '٠', '۰' -> '0'
+            '١', '۱' -> '1'
+            '٢', '۲' -> '2'
+            '٣', '۳' -> '3'
+            '٤', '۴' -> '4'
+            '٥', '۵' -> '5'
+            '٦', '۶' -> '6'
+            '٧', '۷' -> '7'
+            '٨', '۸' -> '8'
+            '٩', '۹' -> '9'
+            else -> char
+        }
+    }.joinToString("")
 }
