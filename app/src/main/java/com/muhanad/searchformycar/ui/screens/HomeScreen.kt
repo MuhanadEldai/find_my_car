@@ -422,7 +422,7 @@ fun HomeScreen(
                                         Spacer(modifier = Modifier.height(6.dp))
                                         Text(
                                             text = statusDesc,
-                                            fontSize = 12.sp,
+                                            fontSize = 14.sp,
                                             color = Color.Gray,
                                             textAlign = if (isAr) TextAlign.Right else TextAlign.Left,
                                             modifier = Modifier.fillMaxWidth()
@@ -434,7 +434,7 @@ fun HomeScreen(
 
                                         // Details
                                         StructuredDetailRow(
-                                            label = AppStrings.get("chassis_number", language),
+                                            label = AppStrings.get("search_chassis", language),
                                             value = car.chassisNumber,
                                             icon = "",
                                             isAr = isAr
@@ -476,7 +476,7 @@ fun HomeScreen(
                                                 onClick = {
                                                     val phone = car.phone.trim()
                                                     val message = if (isAr) {
-                                                        "مرحباً، أستفسر بخصوص سيارتك المسجلة برقم الشاسي: ${car.chassisNumber}"
+                                                        "مرحباً، أستفسر بخصوص السيارة المسجلة برقم الشاسي: ${car.chassisNumber}"
                                                     } else {
                                                         "Hello, inquiring about your car registered with chassis number: ${car.chassisNumber}"
                                                     }

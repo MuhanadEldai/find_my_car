@@ -1,5 +1,6 @@
 package com.muhanad.searchformycar
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -27,6 +28,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
 import androidx.core.graphics.toColorInt
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.appupdate.AppUpdateOptions
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.UpdateAvailability
 import com.muhanad.searchformycar.data.CarRepository
 import com.muhanad.searchformycar.ui.screens.*
 import com.muhanad.searchformycar.ui.theme.AppStrings
@@ -52,6 +57,22 @@ class MainActivity : ComponentActivity() {
 
             LaunchedEffect(context) {
                 repository.setContext(context)
+                try {
+                    val appUpdateManager = AppUpdateManagerFactory.create(context)
+                    appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
+                        if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+                            && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)
+                        ) {
+                            if (context is Activity) {
+                                appUpdateManager.startUpdateFlow(
+                                    appUpdateInfo,
+                                    context,
+                                    AppUpdateOptions.newBuilder(AppUpdateType.IMMEDIATE).build()
+                                )
+                            }
+                        }
+                    }
+                } catch (_: Exception) {}
             }
 
             // Official Android 15/16 Edge-to-Edge SystemBarStyle updates
@@ -126,7 +147,7 @@ class MainActivity : ComponentActivity() {
                                                 )
                                             }
                                         },
-
+                                        actions = {},
                                         colors = TopAppBarDefaults.topAppBarColors(
                                             containerColor = Color.Transparent
                                         )

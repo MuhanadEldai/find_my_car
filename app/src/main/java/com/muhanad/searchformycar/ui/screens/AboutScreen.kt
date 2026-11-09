@@ -51,8 +51,8 @@ fun AboutScreen(
     val context = LocalContext.current
     val isAr = language == "ar"
 
-    val primarySupportPhone = "+249928024419"
-    val whatsappSupportPhone = "+249928024419"
+    val primarySupportPhone = "+249969904987"
+    val whatsappSupportPhone = "+249969904987"
     val facebookUrl = "https://www.facebook.com/share/1Z7jqykEnv"
 
     val aboutContent = @Composable { paddingValues: PaddingValues ->
