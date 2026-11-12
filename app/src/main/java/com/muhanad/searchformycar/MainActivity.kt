@@ -1,12 +1,18 @@
 package com.muhanad.searchformycar
 
+import android.Manifest
 import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
@@ -55,8 +61,25 @@ class MainActivity : ComponentActivity() {
             val isAr = language == "ar"
             val activity = context as? ComponentActivity
 
+            val notifPermissionLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission()
+            ) { isGranted ->
+                prefs.edit { putBoolean("notifications_enabled", isGranted) }
+            }
+
             LaunchedEffect(context) {
                 repository.setContext(context)
+
+                // Request Notification permission on first launch (Android 13+)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    val isGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+                    val requestedBefore = prefs.getBoolean("first_launch_notif_requested", false)
+                    if (!isGranted && !requestedBefore) {
+                        prefs.edit { putBoolean("first_launch_notif_requested", true) }
+                        notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }
+
                 try {
                     val appUpdateManager = AppUpdateManagerFactory.create(context)
                     appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
@@ -196,26 +219,38 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         ) { innerPadding ->
-                            AnimatedContent(
-                                targetState = currentTab,
-                                transitionSpec = {
-                                    (fadeIn(animationSpec = tween(350)) + scaleIn(initialScale = 0.94f, animationSpec = tween(350)))
-                                        .togetherWith(fadeOut(animationSpec = tween(250)) + scaleOut(targetScale = 0.98f, animationSpec = tween(250)))
-                                },
+                            Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(innerPadding),
-                                label = "tab_transition"
-                            ) { tab ->
-                                when (tab) {
-                                    0 -> HomeScreen(
+                                    .padding(innerPadding)
+                            ) {
+                                AnimatedVisibility(
+                                    visible = currentTab == 0,
+                                    enter = fadeIn(tween(300)),
+                                    exit = fadeOut(tween(300))
+                                ) {
+                                    HomeScreen(
                                         repository = repository,
                                         language = language
                                     )
-                                    1 -> AddReportScreen(
+                                }
+
+                                AnimatedVisibility(
+                                    visible = currentTab == 1,
+                                    enter = fadeIn(tween(300)),
+                                    exit = fadeOut(tween(300))
+                                ) {
+                                    AddReportScreen(
                                         language = language
                                     )
-                                    2 -> SettingsScreen(
+                                }
+
+                                AnimatedVisibility(
+                                    visible = currentTab == 2,
+                                    enter = fadeIn(tween(300)),
+                                    exit = fadeOut(tween(300))
+                                ) {
+                                    SettingsScreen(
                                         isDarkMode = isDarkMode,
                                         onDarkModeChanged = {
                                             isDarkMode = it

@@ -27,7 +27,7 @@ class CarRepository(context: Context? = null) {
 
     private var cachedStats: CarStats? = null
     private var lastStatsFetchTime: Long = 0
-    private val CACHE_DURATION_MS = 15 * 60 * 1000L // 15 minutes TTL to save free plan reads
+    private val CACHE_DURATION_MS = 24 * 60 * 60 * 1000L // 24 hours TTL (1 time per day)
 
     private val firestore: FirebaseFirestore? by lazy {
         try {

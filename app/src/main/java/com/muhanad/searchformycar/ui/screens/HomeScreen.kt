@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CarRepair
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.edit
 import com.muhanad.searchformycar.R
 import com.muhanad.searchformycar.data.CarRepository
 import com.muhanad.searchformycar.data.SearchResult
@@ -56,6 +58,23 @@ data class InstructionSlide(
     val descriptionEn: String
 )
 
+fun getRecentSearches(context: Context): List<String> {
+    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    val raw = prefs.getString("recent_vin_searches", "") ?: ""
+    return if (raw.isBlank()) emptyList() else raw.split(",").filter { it.isNotBlank() }
+}
+
+fun addRecentSearch(context: Context, query: String) {
+    if (query.trim().length < 3) return
+    val clean = query.convertArabicDigitsToEnglish().trim()
+    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    val current = getRecentSearches(context).toMutableList()
+    current.remove(clean)
+    current.add(0, clean)
+    val updated = current.take(5).joinToString(",")
+    prefs.edit { putString("recent_vin_searches", updated) }
+}
+
 @Composable
 fun HomeScreen(
     repository: CarRepository,
@@ -64,6 +83,10 @@ fun HomeScreen(
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
     var chassisQuery by rememberSaveable { mutableStateOf(repository.cachedSearchQuery) }
+    var recentSearches by remember { mutableStateOf(getRecentSearches(context)) }
+    var isDropdownExpanded by remember { mutableStateOf(false) }
+    var animateStats by remember { mutableStateOf(false) }
+
     var searchResultState by remember { 
         mutableStateOf<SearchResult?>(
             if (repository.cachedSearchQuery.isNotBlank()) SearchResult.Success(listOfNotNull(repository.cachedSearchResult)) else null
@@ -139,7 +162,8 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         repository.setContext(context)
-        stats = repository.getStatistics(forceRefresh = true)
+        animateStats = true
+        stats = repository.getStatistics(forceRefresh = false)
     }
 
     val performSearch: () -> Unit = {
@@ -149,6 +173,8 @@ fun HomeScreen(
                 Toast.makeText(context, AppStrings.get("min_chassis_warning", language), Toast.LENGTH_SHORT).show()
             } else {
                 keyboardController?.hide()
+                addRecentSearch(context, query)
+                recentSearches = getRecentSearches(context)
                 if (!isNetworkAvailable(context)) {
                     searchResultState = SearchResult.NetworkError(AppStrings.get("no_internet", language))
                 } else {
@@ -316,21 +342,68 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    OutlinedTextField(
-                        value = chassisQuery,
-                        onValueChange = { chassisQuery = it.convertArabicDigitsToEnglish() },
-                        placeholder = {
-                            Text(
-                                AppStrings.get("enter_chassis_placeholder", language),
-                                textAlign = if (isAr) TextAlign.Right else TextAlign.Left,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        },
-                        shape = RoundedCornerShape(16.dp),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        textStyle = LocalTextStyle.current.copy(textAlign = if (isAr) TextAlign.Right else TextAlign.Left)
-                    )
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = chassisQuery,
+                            onValueChange = { chassisQuery = it.convertArabicDigitsToEnglish() },
+                            placeholder = {
+                                Text(
+                                    AppStrings.get("enter_chassis_placeholder", language),
+                                    textAlign = if (isAr) TextAlign.Right else TextAlign.Left,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            },
+                            trailingIcon = {
+                                if (recentSearches.isNotEmpty()) {
+                                    IconButton(onClick = { isDropdownExpanded = !isDropdownExpanded }) {
+                                        Icon(
+                                            imageVector = Icons.Default.History,
+                                            contentDescription = "Recent Searches",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            textStyle = LocalTextStyle.current.copy(textAlign = if (isAr) TextAlign.Right else TextAlign.Left)
+                        )
+
+                        DropdownMenu(
+                            expanded = isDropdownExpanded && recentSearches.isNotEmpty(),
+                            onDismissRequest = { isDropdownExpanded = false },
+                            modifier = Modifier.fillMaxWidth(0.85f)
+                        ) {
+                            recentSearches.forEach { recent ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = recent,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 14.sp
+                                            )
+                                            Text(
+                                                text = if (isAr) "بحث سابق" else "Recent",
+                                                fontSize = 11.sp,
+                                                color = Color.Gray
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        chassisQuery = recent
+                                        isDropdownExpanded = false
+                                        performSearch()
+                                    }
+                                )
+                            }
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -422,7 +495,7 @@ fun HomeScreen(
                                         Spacer(modifier = Modifier.height(6.dp))
                                         Text(
                                             text = statusDesc,
-                                            fontSize = 14.sp,
+                                            fontSize = 12.sp,
                                             color = Color.Gray,
                                             textAlign = if (isAr) TextAlign.Right else TextAlign.Left,
                                             modifier = Modifier.fillMaxWidth()
@@ -434,7 +507,7 @@ fun HomeScreen(
 
                                         // Details
                                         StructuredDetailRow(
-                                            label = AppStrings.get("search_chassis", language),
+                                            label = AppStrings.get("chassis_number", language),
                                             value = car.chassisNumber,
                                             icon = "",
                                             isAr = isAr
@@ -476,7 +549,7 @@ fun HomeScreen(
                                                 onClick = {
                                                     val phone = car.phone.trim()
                                                     val message = if (isAr) {
-                                                        "مرحباً، أستفسر بخصوص السيارة المسجلة برقم الشاسي: ${car.chassisNumber}"
+                                                        "مرحباً، أستفسر بخصوص سيارتك المسجلة برقم الشاسي: ${car.chassisNumber}"
                                                     } else {
                                                         "Hello, inquiring about your car registered with chassis number: ${car.chassisNumber}"
                                                     }
@@ -619,12 +692,14 @@ fun HomeScreen(
                         modifier = Modifier.weight(1f),
                         title = AppStrings.get("total_reports", language),
                         count = stats.total,
+                        startAnimation = animateStats,
                         description = AppStrings.get("stat_desc_total", language)
                     )
                     StatCard(
                         modifier = Modifier.weight(1f),
                         title = AppStrings.get("missing_cars", language),
                         count = stats.missing,
+                        startAnimation = animateStats,
                         description = AppStrings.get("stat_desc_missing", language)
                     )
                 }
@@ -636,12 +711,14 @@ fun HomeScreen(
                         modifier = Modifier.weight(1f),
                         title = AppStrings.get("found_cars", language),
                         count = stats.found,
+                        startAnimation = animateStats,
                         description = AppStrings.get("stat_desc_found", language)
                     )
                     StatCard(
                         modifier = Modifier.weight(1f),
                         title = AppStrings.get("delivered_cars", language),
                         count = stats.delivered,
+                        startAnimation = animateStats,
                         description = AppStrings.get("stat_desc_delivered", language)
                     )
                 }
@@ -703,10 +780,10 @@ fun StructuredDetailRow(label: String, value: String, icon: String, isAr: Boolea
 }
 
 @Composable
-fun StatCard(modifier: Modifier = Modifier, title: String, count: Int, description: String) {
+fun StatCard(modifier: Modifier = Modifier, title: String, count: Int, startAnimation: Boolean, description: String) {
     val animatedCount by animateIntAsState(
-        targetValue = count,
-        animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+        targetValue = if (startAnimation) count else 0,
+        animationSpec = tween(durationMillis = 1400, easing = FastOutSlowInEasing),
         label = "count_animation"
     )
 
