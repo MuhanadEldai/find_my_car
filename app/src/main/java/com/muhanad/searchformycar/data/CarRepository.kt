@@ -2,6 +2,7 @@ package com.muhanad.searchformycar.data
 
 import android.content.Context
 import com.google.firebase.firestore.AggregateSource
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeoutOrNull
@@ -103,7 +104,7 @@ class CarRepository(context: Context? = null) {
 
     /**
      * Efficiently fetches statistics using Firestore native aggregation `count()` queries.
-     * Caches result for 15 minutes to drastically reduce data usage and network reads.
+     * Caches result for 24 hours to drastically reduce data usage and network reads.
      * Persists results locally in SharedPreferences for offline usage.
      */
     suspend fun getStatistics(forceRefresh: Boolean = false): CarStats {
@@ -179,15 +180,20 @@ class CarRepository(context: Context? = null) {
         }
 
         val results = mutableListOf<CarModel>()
+        val queryDigits = query.filter { it.isDigit() }
 
         try {
             val db = firestore
             if (db == null) {
-                val mockMatches = mockCars.filter { it.chassisNumber.equals(query, ignoreCase = true) || it.id.equals(query, ignoreCase = true) }
+                val mockMatches = mockCars.filter { car ->
+                    car.chassisNumber.equals(query, ignoreCase = true) ||
+                    car.id.equals(query, ignoreCase = true) ||
+                    (queryDigits.length >= 3 && car.licensePlate.filter { it.isDigit() }.contains(queryDigits))
+                }
                 return SearchResult.Success(mockMatches)
             }
 
-            // 1. Targeted query on "vin" field (Only fetches exact matching document(s) - 1 read on free plan)
+            // 1. Targeted query on "vin" field
             val vinSnapshot = withTimeoutOrNull(6000.milliseconds) {
                 db.collection("cars")
                     .whereEqualTo("vin", query)
@@ -200,16 +206,7 @@ class CarRepository(context: Context? = null) {
             }
 
             for (doc in vinSnapshot.documents) {
-                val car = CarModel(
-                    id = doc.id,
-                    chassisNumber = doc.getString("vin") ?: doc.getString("chassisNumber") ?: query,
-                    carModel = doc.getString("mdl") ?: doc.getString("carModel") ?: "غير معروف",
-                    licensePlate = doc.getString("plt") ?: doc.getString("licensePlate") ?: "",
-                    color = doc.getString("clr") ?: doc.getString("color") ?: "",
-                    phone = doc.getString("phn") ?: doc.getString("phone") ?: "",
-                    description = doc.getString("dsc") ?: doc.getString("description") ?: "",
-                    status = doc.getString("sts") ?: doc.getString("status") ?: "مفقود"
-                )
+                val car = parseCarDoc(doc, query)
                 if (results.none { it.id == car.id }) {
                     results.add(car)
                 }
@@ -224,16 +221,7 @@ class CarRepository(context: Context? = null) {
                         .await()
                 }
                 chassisSnapshot?.documents?.forEach { doc ->
-                    val car = CarModel(
-                        id = doc.id,
-                        chassisNumber = doc.getString("vin") ?: doc.getString("chassisNumber") ?: query,
-                        carModel = doc.getString("mdl") ?: doc.getString("carModel") ?: "غير معروف",
-                        licensePlate = doc.getString("plt") ?: doc.getString("licensePlate") ?: "",
-                        color = doc.getString("clr") ?: doc.getString("color") ?: "",
-                        phone = doc.getString("phn") ?: doc.getString("phone") ?: "",
-                        description = doc.getString("dsc") ?: doc.getString("description") ?: "",
-                        status = doc.getString("sts") ?: doc.getString("status") ?: "مفقود"
-                    )
+                    val car = parseCarDoc(doc, query)
                     if (results.none { it.id == car.id }) {
                         results.add(car)
                     }
@@ -246,18 +234,26 @@ class CarRepository(context: Context? = null) {
                     db.collection("cars").document(query).get().await()
                 }
                 if (docRef != null && docRef.exists()) {
-                    val car = CarModel(
-                        id = docRef.id,
-                        chassisNumber = docRef.getString("vin") ?: docRef.getString("chassisNumber") ?: query,
-                        carModel = docRef.getString("mdl") ?: docRef.getString("carModel") ?: "غير معروف",
-                        licensePlate = docRef.getString("plt") ?: docRef.getString("licensePlate") ?: "",
-                        color = docRef.getString("clr") ?: docRef.getString("color") ?: "",
-                        phone = docRef.getString("phn") ?: docRef.getString("phone") ?: "",
-                        description = docRef.getString("dsc") ?: docRef.getString("description") ?: "",
-                        status = docRef.getString("sts") ?: docRef.getString("status") ?: "مفقود"
-                    )
+                    val car = parseCarDoc(docRef, query)
                     if (results.none { it.id == car.id }) {
                         results.add(car)
+                    }
+                }
+            }
+
+            // 4. If VIN doesn't match and query has digits, fallback to searching by license plate digits (without letters)
+            if (results.isEmpty() && queryDigits.length >= 3) {
+                val allSnapshot = withTimeoutOrNull(6000.milliseconds) {
+                    db.collection("cars").get().await()
+                }
+                allSnapshot?.documents?.forEach { doc ->
+                    val plate = doc.getString("plt") ?: doc.getString("licensePlate") ?: ""
+                    val plateDigits = plate.filter { it.isDigit() }
+                    if (plateDigits.isNotEmpty() && plateDigits.contains(queryDigits)) {
+                        val car = parseCarDoc(doc, query)
+                        if (results.none { it.id == car.id }) {
+                            results.add(car)
+                        }
                     }
                 }
             }
@@ -265,8 +261,12 @@ class CarRepository(context: Context? = null) {
             return SearchResult.NetworkError(e.localizedMessage ?: "حدث خطأ في الاتصال بالشبكة")
         }
 
-        // Also search in mock list with exact match
-        val mockMatches = mockCars.filter { it.chassisNumber.equals(query, ignoreCase = true) || it.id.equals(query, ignoreCase = true) }
+        // Also search in mock list with VIN or license plate digits fallback
+        val mockMatches = mockCars.filter { car ->
+            car.chassisNumber.equals(query, ignoreCase = true) ||
+            car.id.equals(query, ignoreCase = true) ||
+            (queryDigits.length >= 3 && car.licensePlate.filter { it.isDigit() }.contains(queryDigits))
+        }
         for (mock in mockMatches) {
             if (results.none { it.id == mock.id && it.chassisNumber.equals(mock.chassisNumber, ignoreCase = true) }) {
                 results.add(mock)
@@ -275,6 +275,20 @@ class CarRepository(context: Context? = null) {
 
         cachedSearchResult = results.firstOrNull()
         return SearchResult.Success(results)
+    }
+
+    private fun parseCarDoc(doc: DocumentSnapshot, query: String): CarModel {
+        return CarModel(
+            id = "",
+            chassisNumber = doc.getString("vin") ?: doc.getString("chassisNumber") ?: query,
+            carModel = doc.getString("mdl") ?: doc.getString("carModel") ?: "غير معروف",
+            licensePlate = "",
+            color = "",
+            phone = "",
+            description = doc.getString("dsc") ?: doc.getString("description") ?: "",
+            status = doc.getString("sts") ?: doc.getString("status") ?: "مفقود",
+            timestamp = ""
+        )
     }
 
 }

@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -85,7 +86,7 @@ fun HomeScreen(
     var chassisQuery by rememberSaveable { mutableStateOf(repository.cachedSearchQuery) }
     var recentSearches by remember { mutableStateOf(getRecentSearches(context)) }
     var isDropdownExpanded by remember { mutableStateOf(false) }
-    var animateStats by remember { mutableStateOf(false) }
+    var hasAnimatedStartup by rememberSaveable { mutableStateOf(false) }
 
     var searchResultState by remember { 
         mutableStateOf<SearchResult?>(
@@ -162,8 +163,10 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         repository.setContext(context)
-        animateStats = true
         stats = repository.getStatistics(forceRefresh = false)
+        if (!hasAnimatedStartup) {
+            hasAnimatedStartup = true
+        }
     }
 
     val performSearch: () -> Unit = {
@@ -405,6 +408,16 @@ fun HomeScreen(
                         }
                     }
 
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = AppStrings.get("search_notice", language),
+                        fontSize = 11.sp,
+                        color = Color.Gray,
+                        textAlign = if (isAr) TextAlign.Right else TextAlign.Left,
+                        lineHeight = 16.sp,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Button(
@@ -507,70 +520,76 @@ fun HomeScreen(
 
                                         // Details
                                         StructuredDetailRow(
-                                            label = AppStrings.get("chassis_number", language),
+                                            label = AppStrings.get("search_chassis", language),
                                             value = car.chassisNumber,
                                             icon = "",
                                             isAr = isAr
                                         )
-                                        Spacer(modifier = Modifier.height(10.dp))
-                                        StructuredDetailRow(
-                                            label = AppStrings.get("license_plate", language),
-                                            value = car.licensePlate.ifEmpty { AppStrings.get("not_specified", language) },
-                                            icon = "",
-                                            isAr = isAr
-                                        )
-                                        Spacer(modifier = Modifier.height(10.dp))
-                                        StructuredDetailRow(
-                                            label = AppStrings.get("color", language),
-                                            value = car.color.ifEmpty { AppStrings.get("not_specified", language) },
-                                            icon = "",
-                                            isAr = isAr
-                                        )
-                                        Spacer(modifier = Modifier.height(10.dp))
-                                        StructuredDetailRow(
-                                            label = AppStrings.get("phone", language),
-                                            value = car.phone.ifEmpty { AppStrings.get("not_available", language) },
-                                            icon = "",
-                                            isAr = isAr
-                                        )
-                                        Spacer(modifier = Modifier.height(10.dp))
-                                        StructuredDetailRow(
-                                            label = AppStrings.get("details", language),
-                                            value = car.description.ifEmpty { AppStrings.get("no_details", language) },
-                                            icon = "",
-                                            isAr = isAr
-                                        )
+                                        if (car.licensePlate.isNotBlank()) {
+                                            Spacer(modifier = Modifier.height(10.dp))
+                                            StructuredDetailRow(
+                                                label = AppStrings.get("license_plate", language),
+                                                value = car.licensePlate,
+                                                icon = "",
+                                                isAr = isAr
+                                            )
+                                        }
+                                        if (car.color.isNotBlank()) {
+                                            Spacer(modifier = Modifier.height(10.dp))
+                                            StructuredDetailRow(
+                                                label = AppStrings.get("color", language),
+                                                value = car.color,
+                                                icon = "",
+                                                isAr = isAr
+                                            )
+                                        }
+                                        if (car.phone.isNotBlank()) {
+                                            Spacer(modifier = Modifier.height(10.dp))
+                                            StructuredDetailRow(
+                                                label = AppStrings.get("phone", language),
+                                                value = car.phone,
+                                                icon = "",
+                                                isAr = isAr
+                                            )
+                                        }
+                                        if (car.description.isNotBlank()) {
+                                            Spacer(modifier = Modifier.height(10.dp))
+                                            StructuredDetailRow(
+                                                label = AppStrings.get("details", language),
+                                                value = car.description,
+                                                icon = "",
+                                                isAr = isAr
+                                            )
+                                        }
 
                                         Spacer(modifier = Modifier.height(20.dp))
 
-                                        // WhatsApp Button
-                                        if (car.phone.isNotBlank()) {
-                                            Button(
-                                                onClick = {
-                                                    val phone = car.phone.trim()
-                                                    val message = if (isAr) {
-                                                        "مرحباً، أستفسر بخصوص سيارتك المسجلة برقم الشاسي: ${car.chassisNumber}"
-                                                    } else {
-                                                        "Hello, inquiring about your car registered with chassis number: ${car.chassisNumber}"
-                                                    }
-                                                    val intent = Intent(Intent.ACTION_VIEW).apply {
-                                                        data = "https://api.whatsapp.com/send?phone=$phone&text=${Uri.encode(message)}".toUri()
-                                                    }
-                                                    try {
-                                                        context.startActivity(intent)
-                                                    } catch (_: Exception) {
-                                                        Toast.makeText(context, AppStrings.get("whatsapp_not_installed", language), Toast.LENGTH_SHORT).show()
-                                                    }
-                                                },
-                                                shape = RoundedCornerShape(18.dp),
-                                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp, pressedElevation = 2.dp),
-                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .height(52.dp)
-                                            ) {
-                                                Text(AppStrings.get("chat_owner_whatsapp", language), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                            }
+                                        // WhatsApp Contact Button (Always shown for found results)
+                                        Button(
+                                            onClick = {
+                                                val phone = "+249969904987"
+                                                val message = if (isAr) {
+                                                    "مرحباً، أستفسر بخصوص السيارة المسجلة برقم الشاسي: ${car.chassisNumber}"
+                                                } else {
+                                                    "Hello, inquiring about the car registered with chassis number: ${car.chassisNumber}"
+                                                }
+                                                val intent = Intent(Intent.ACTION_VIEW).apply {
+                                                    data = "https://api.whatsapp.com/send?phone=$phone&text=${Uri.encode(message)}".toUri()
+                                                }
+                                                try {
+                                                    context.startActivity(intent)
+                                                } catch (_: Exception) {
+                                                    Toast.makeText(context, AppStrings.get("whatsapp_not_installed", language), Toast.LENGTH_SHORT).show()
+                                                }
+                                            },
+                                            shape = RoundedCornerShape(18.dp),
+                                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp, pressedElevation = 2.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(52.dp)
+                                        ) {
+                                            Text(AppStrings.get("chat_owner_whatsapp", language), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                                         }
                                     }
                                 }
@@ -692,14 +711,14 @@ fun HomeScreen(
                         modifier = Modifier.weight(1f),
                         title = AppStrings.get("total_reports", language),
                         count = stats.total,
-                        startAnimation = animateStats,
+                        isAlreadyAnimated = hasAnimatedStartup,
                         description = AppStrings.get("stat_desc_total", language)
                     )
                     StatCard(
                         modifier = Modifier.weight(1f),
                         title = AppStrings.get("missing_cars", language),
                         count = stats.missing,
-                        startAnimation = animateStats,
+                        isAlreadyAnimated = hasAnimatedStartup,
                         description = AppStrings.get("stat_desc_missing", language)
                     )
                 }
@@ -709,16 +728,16 @@ fun HomeScreen(
                 ) {
                     StatCard(
                         modifier = Modifier.weight(1f),
-                        title = AppStrings.get("found_cars", language),
+                        title = "تم رصدها",
                         count = stats.found,
-                        startAnimation = animateStats,
+                        isAlreadyAnimated = hasAnimatedStartup,
                         description = AppStrings.get("stat_desc_found", language)
                     )
                     StatCard(
                         modifier = Modifier.weight(1f),
                         title = AppStrings.get("delivered_cars", language),
                         count = stats.delivered,
-                        startAnimation = animateStats,
+                        isAlreadyAnimated = hasAnimatedStartup,
                         description = AppStrings.get("stat_desc_delivered", language)
                     )
                 }
@@ -780,30 +799,59 @@ fun StructuredDetailRow(label: String, value: String, icon: String, isAr: Boolea
 }
 
 @Composable
-fun StatCard(modifier: Modifier = Modifier, title: String, count: Int, startAnimation: Boolean, description: String) {
+fun StatCard(modifier: Modifier = Modifier, title: String, count: Int, isAlreadyAnimated: Boolean, description: String) {
     val animatedCount by animateIntAsState(
-        targetValue = if (startAnimation) count else 0,
-        animationSpec = tween(durationMillis = 1400, easing = FastOutSlowInEasing),
+        targetValue = count,
+        animationSpec = if (!isAlreadyAnimated) tween(durationMillis = 1400, easing = FastOutSlowInEasing) else snap(),
         label = "count_animation"
     )
 
     Card(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = modifier.height(115.dp)
+        modifier = modifier.height(125.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(8.dp),
+                .padding(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("$animatedCount", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
-            Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(description, fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center, maxLines = 1)
+            // Semi-transparent card badge for text number count
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                    .padding(horizontal = 14.dp, vertical = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "$animatedCount",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = description,
+                    fontSize = 11.sp,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
+                )
+            }
         }
     }
 }

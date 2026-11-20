@@ -7,15 +7,17 @@ plugins {
 android {
     namespace = "com.muhanad.searchformycar"
     compileSdk {
-        version = release(37)
+        version = release(37) {
+            minorApiLevel = 2
+        }
     }
 
     defaultConfig {
         applicationId = "com.muhanad.searchformycar"
         minSdk = 24
         targetSdk = 37
-        versionCode = 5
-        versionName = "5.0"
+        versionCode = 7
+        versionName = "7.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
