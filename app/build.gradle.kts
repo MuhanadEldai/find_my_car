@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.muhanad.searchformycar"
+    namespace = "com.muhanad.fteshlyar"
     compileSdk {
         version = release(37) {
             minorApiLevel = 2
@@ -13,7 +13,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.muhanad.searchformycar"
+        applicationId = "com.muhanad.fteshlyar"
         minSdk = 24
         targetSdk = 37
         versionCode = 7

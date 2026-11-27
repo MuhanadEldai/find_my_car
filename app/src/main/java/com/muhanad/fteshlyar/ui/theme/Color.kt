@@ -1,4 +1,4 @@
-package com.muhanad.searchformycar.ui.theme
+package com.muhanad.fteshlyar.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

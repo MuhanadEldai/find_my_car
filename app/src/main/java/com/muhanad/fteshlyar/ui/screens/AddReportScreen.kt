@@ -1,4 +1,4 @@
-package com.muhanad.searchformycar.ui.screens
+package com.muhanad.fteshlyar.ui.screens
 
 import android.content.Intent
 import android.net.Uri
@@ -42,7 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
-import com.muhanad.searchformycar.ui.theme.AppStrings
+import com.muhanad.fteshlyar.ui.theme.AppStrings
 
 @Composable
 fun AddReportScreen(

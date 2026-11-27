@@ -1,4 +1,4 @@
-package com.muhanad.searchformycar.service
+package com.muhanad.fteshlyar.service
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -6,7 +6,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import com.muhanad.searchformycar.R
+import com.muhanad.fteshlyar.R
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 

@@ -1,4 +1,4 @@
-package com.muhanad.searchformycar.ui.theme
+package com.muhanad.fteshlyar.ui.theme
 
 object AppStrings {
     fun get(key: String, lang: String): String {
@@ -51,7 +51,8 @@ object AppStrings {
             "add_new_report_btn" -> if (isAr) "إضافة بلاغ جديد" else "Add New Report"
             "no_internet" -> if (isAr) "لا يوجد اتصال بالإنترنت. يرجى التحقق من الشبكة." else "No internet connection. Please check your network."
             "retry" -> if (isAr) "إعادة المحاولة" else "Retry"
-            "min_chassis_warning" -> if (isAr) "يرجى إدخال 3 أحرف أو أرقام على الأقل للبحث" else "Please enter at least 3 characters/digits to search"
+            "min_chassis_warning" -> if (isAr) "يرجى إدخال 3 أرقام على الأقل للبحث" else "Please enter at least 3 digits to search"
+            "numbers_only_warning" -> if (isAr) "يرجى إدخال الأرقام فقط بدون حروف أو رموز" else "Please enter numbers only without letters or symbols"
 
             // Add Report Screen
             "report_card_header" -> if (isAr) "بيانات البلاغ والسيارة" else "Car & Report Details"

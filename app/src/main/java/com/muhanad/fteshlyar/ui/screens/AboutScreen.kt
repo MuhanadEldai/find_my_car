@@ -1,4 +1,4 @@
-package com.muhanad.searchformycar.ui.screens
+package com.muhanad.fteshlyar.ui.screens
 
 import android.app.Activity
 import android.content.Intent
@@ -39,8 +39,8 @@ import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.google.android.play.core.review.ReviewManagerFactory
 import androidx.core.net.toUri
-import com.muhanad.searchformycar.R
-import com.muhanad.searchformycar.ui.theme.AppStrings
+import com.muhanad.fteshlyar.R
+import com.muhanad.fteshlyar.ui.theme.AppStrings
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

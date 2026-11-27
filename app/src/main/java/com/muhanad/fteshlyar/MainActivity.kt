@@ -1,4 +1,4 @@
-package com.muhanad.searchformycar
+package com.muhanad.fteshlyar
 
 import android.Manifest
 import android.app.Activity
@@ -38,10 +38,10 @@ import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.appupdate.AppUpdateOptions
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
-import com.muhanad.searchformycar.data.CarRepository
-import com.muhanad.searchformycar.ui.screens.*
-import com.muhanad.searchformycar.ui.theme.AppStrings
-import com.muhanad.searchformycar.ui.theme.SearchformycarTheme
+import com.muhanad.fteshlyar.data.CarRepository
+import com.muhanad.fteshlyar.ui.screens.*
+import com.muhanad.fteshlyar.ui.theme.AppStrings
+import com.muhanad.fteshlyar.ui.theme.SearchformycarTheme
 
 class MainActivity : ComponentActivity() {
     private val repository = CarRepository()

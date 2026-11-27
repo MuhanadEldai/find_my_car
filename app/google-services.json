@@ -7,6 +7,44 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:630675804939:android:1419cfa3d67e72bb9c880e",
+        "android_client_info": {
+          "package_name": "com.muhanad.findmycar_admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBXWimOqb5NSlOO4gGaGcAjfO2n4HRK2Qg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:630675804939:android:0eff29dbf1f2710f9c880e",
+        "android_client_info": {
+          "package_name": "com.muhanad.fteshlyar"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBXWimOqb5NSlOO4gGaGcAjfO2n4HRK2Qg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:630675804939:android:3fddd6ea5b3bd2ad9c880e",
         "android_client_info": {
           "package_name": "com.muhanad.searchformycar"

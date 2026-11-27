@@ -1,4 +1,4 @@
-package com.muhanad.searchformycar.ui.theme
+package com.muhanad.fteshlyar.ui.theme
 
 import android.os.Build
 import androidx.compose.animation.animateColorAsState

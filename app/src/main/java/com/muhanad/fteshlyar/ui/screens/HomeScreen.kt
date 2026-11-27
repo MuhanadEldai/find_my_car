@@ -1,4 +1,4 @@
-package com.muhanad.searchformycar.ui.screens
+package com.muhanad.fteshlyar.ui.screens
 
 import android.content.Context
 import android.content.Intent
@@ -42,11 +42,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
-import com.muhanad.searchformycar.R
-import com.muhanad.searchformycar.data.CarRepository
-import com.muhanad.searchformycar.data.SearchResult
-import com.muhanad.searchformycar.data.convertArabicDigitsToEnglish
-import com.muhanad.searchformycar.ui.theme.AppStrings
+import com.muhanad.fteshlyar.R
+import com.muhanad.fteshlyar.data.CarRepository
+import com.muhanad.fteshlyar.data.SearchResult
+import com.muhanad.fteshlyar.data.convertArabicDigitsToEnglish
+import com.muhanad.fteshlyar.ui.theme.AppStrings
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.core.net.toUri
@@ -174,6 +174,8 @@ fun HomeScreen(
         if (query.isNotBlank()) {
             if (query.length < 3) {
                 Toast.makeText(context, AppStrings.get("min_chassis_warning", language), Toast.LENGTH_SHORT).show()
+            } else if (query.any { !it.isDigit() }) {
+                Toast.makeText(context, AppStrings.get("numbers_only_warning", language), Toast.LENGTH_SHORT).show()
             } else {
                 keyboardController?.hide()
                 addRecentSearch(context, query)

@@ -1,4 +1,4 @@
-package com.muhanad.searchformycar.ui.screens
+package com.muhanad.fteshlyar.ui.screens
 
 import android.Manifest
 import android.content.Context
@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
-import com.muhanad.searchformycar.ui.theme.AppStrings
+import com.muhanad.fteshlyar.ui.theme.AppStrings
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -311,7 +311,7 @@ fun SettingsScreen(
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = "Version 3.0.0 • Support & App Info",
+                                        text = "Version 7.0.0 • Support & App Info",
                                         fontSize = 12.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
